@@ -305,6 +305,7 @@ END
     set_optional_property "ldap-encryption-method"  "$LDAP_ENCRYPTION_METHOD"
     set_property          "ldap-user-base-dn"       "$LDAP_USER_BASE_DN"
     set_optional_property "ldap-username-attribute" "$LDAP_USERNAME_ATTRIBUTE"
+    set_optional_property "ldap-member-attribute"   "$LDAP_MEMBER_ATTRIBUTE"
     set_optional_property "ldap-group-base-dn"      "$LDAP_GROUP_BASE_DN"
     set_optional_property "ldap-config-base-dn"     "$LDAP_CONFIG_BASE_DN"
 
@@ -319,6 +320,88 @@ END
     # Add required .jar files to GUACAMOLE_EXT
     ln -s /opt/guacamole/ldap/guacamole-auth-*.jar "$GUACAMOLE_EXT"
 
+}
+
+##
+## Adds properties to guacamole.properties which select the LDAP
+## authentication provider, and configure it to connect to the specified LDAP
+## directory.
+##
+associate_radius() {
+
+    # Verify required parameters are present
+    if [ -z "$RADIUS_SHARED_SECRET" -o -z "$RADIUS_AUTH_PROTOCOL" ]; then
+        cat <<END
+FATAL: Missing required environment variables
+-------------------------------------------------------------------------------
+If using RADIUS server, you must provide each of the following environment
+variables:
+
+    RADIUS_SHARED_SECRET   The shared secret to use when talking to the 
+                           RADIUS server.
+
+    RADIUS_AUTH_PROTOCOL   The authentication protocol to use when talking 
+                           to the RADIUS server.
+                           Supported values are: 
+                             pap, chap, mschapv1, mschapv2, eap-md5, 
+                             eap-tls and eap-ttls.
+END
+        exit 1;
+    fi
+
+    # Verify provided files do exist and are readable
+    if [ -n "$RADIUS_KEY_FILE" -a ! -r "$RADIUS_KEY_FILE" ]; then
+       cat <<END
+FATAL: Provided file RADIUS_KEY_FILE=$RADIUS_KEY_FILE does not exist 
+       or is not readable!
+-------------------------------------------------------------------------------
+If you provide key or CA files you need to mount those into the container and
+make sure they are readable for the user in the container.
+END
+        exit 1;
+    fi
+    if [ -n "$RADIUS_CA_FILE" -a ! -r "$RADIUS_CA_FILE" ]; then
+       cat <<END
+FATAL: Provided file RADIUS_CA_FILE=$RADIUS_CA_FILE does not exist 
+       or is not readable!
+-------------------------------------------------------------------------------
+If you provide key or CA files you need to mount those into the container and
+make sure they are readable for the user in the container.
+END
+        exit 1;
+    fi
+    if [ "$RADIUS_AUTH_PROTOCOL" == "eap-ttls" -a -z "$RADIUS_EAP_TTLS_INNER_PROTOCOL" ]; then
+       cat <<END
+FATAL: Authentication protocol "eap-ttls" specified but
+       RADIUS_EAP_TTLS_INNER_PROTOCOL is not set!
+-------------------------------------------------------------------------------
+When EAP-TTLS is used, this parameter specifies the inner (tunneled)
+protocol to use talking to the RADIUS server.
+END
+        exit 1;
+    fi
+
+    # Update config file
+    set_optional_property "radius-hostname"         "$RADIUS_HOSTNAME"
+    set_optional_property "radius-auth-port"        "$RADIUS_AUTH_PORT"
+    set_property          "radius-shared-secret"    "$RADIUS_SHARED_SECRET"
+    set_property          "radius-auth-protocol"    "$RADIUS_AUTH_PROTOCOL"
+    set_optional_property "radius-key-file"         "$RADIUS_KEY_FILE"
+    set_optional_property "radius-key-type"         "$RADIUS_KEY_TYPE"
+    set_optional_property "radius-key-password"     "$RADIUS_KEY_PASSWORD"
+    set_optional_property "radius-ca-file"          "$RADIUS_CA_FILE"
+    set_optional_property "radius-ca-type"          "$RADIUS_CA_TYPE"
+    set_optional_property "radius-ca-password"      "$RADIUS_CA_PASSWORD"
+    set_optional_property "radius-trust-all"        "$RADIUS_TRUST_ALL"
+    set_optional_property "radius-retries"          "$RADIUS_RETRIES"
+    set_optional_property "radius-timeout"          "$RADIUS_TIMEOUT"
+
+    set_optional_property \
+       "radius-eap-ttls-inner-protocol" \
+       "$RADIUS_EAP_TTLS_INNER_PROTOCOL"
+
+    # Add required .jar files to GUACAMOLE_EXT
+    ln -s /opt/guacamole/radius/guacamole-auth-*.jar "$GUACAMOLE_EXT"
 }
 
 ##
@@ -423,6 +506,12 @@ if [ -n "$LDAP_HOSTNAME" ]; then
     INSTALLED_AUTH="$INSTALLED_AUTH ldap"
 fi
 
+# Use RADIUS server if specified
+if [ -n "$RADIUS_SHARED_SECRET" ]; then
+    associate_radius
+    INSTALLED_AUTH="$INSTALLED_AUTH radius"
+fi
+
 #
 # Validate that at least one authentication backend is installed
 #
@@ -432,10 +521,10 @@ if [ -z "$INSTALLED_AUTH" -a -z "$GUACAMOLE_HOME_TEMPLATE" ]; then
 FATAL: No authentication configured
 -------------------------------------------------------------------------------
 The Guacamole Docker container needs at least one authentication mechanism in
-order to function, such as a MySQL database, PostgreSQL database, or LDAP
-directory.  Please specify at least the MYSQL_DATABASE or POSTGRES_DATABASE
-environment variables, or check Guacamole's Docker documentation regarding
-configuring LDAP and/or custom extensions.
+order to function, such as a MySQL database, PostgreSQL database, LDAP
+directory or RADIUS server. Please specify at least the MYSQL_DATABASE or 
+POSTGRES_DATABASE environment variables, or check Guacamole's Docker 
+documentation regarding configuring LDAP and/or custom extensions.
 END
     exit 1;
 fi
