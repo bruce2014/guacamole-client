@@ -53,7 +53,22 @@ angular.module('form').directive('guacFormField', [function formField() {
              *
              * @type String
              */
-            model : '='
+            model : '=',
+
+            /**
+             * Whether this field should be rendered as disabled. By default,
+             * form fields are enabled.
+             *
+             * @type Boolean
+             */
+            disabled : '=',
+
+            /**
+             * Whether this field should be focused.
+             *
+             * @type Boolean
+             */
+            focused : '='
 
         },
         templateUrl: 'app/form/templates/formField.html',

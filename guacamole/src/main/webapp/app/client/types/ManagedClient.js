@@ -42,6 +42,7 @@ angular.module('client').factory('ManagedClient', ['$rootScope', '$injector',
     var authenticationService  = $injector.get('authenticationService');
     var connectionGroupService = $injector.get('connectionGroupService');
     var connectionService      = $injector.get('connectionService');
+    var preferenceService      = $injector.get('preferenceService');
     var requestService         = $injector.get('requestService');
     var tunnelService          = $injector.get('tunnelService');
     var guacAudio              = $injector.get('guacAudio');
@@ -78,6 +79,16 @@ angular.module('client').factory('ManagedClient', ['$rootScope', '$injector',
          * @type String
          */
         this.id = template.id;
+
+        /**
+         * The time that the connection was last brought to the foreground of
+         * the current tab, as the number of milliseconds elapsed since
+         * midnight of January 1, 1970 UTC. If the connection has not yet been
+         * viewed, this will be 0.
+         *
+         * @type Number
+         */
+        this.lastUsed = template.lastUsed || 0;
 
         /**
          * The actual underlying Guacamole client.
@@ -225,6 +236,7 @@ angular.module('client').factory('ManagedClient', ['$rootScope', '$injector',
             + "&GUAC_WIDTH="       + Math.floor(optimal_width)
             + "&GUAC_HEIGHT="      + Math.floor(optimal_height)
             + "&GUAC_DPI="         + Math.floor(optimal_dpi)
+            + "&GUAC_TIMEZONE="    + encodeURIComponent(preferenceService.preferences.timezone)
             + (connectionParameters ? '&' + connectionParameters : '');
 
         // Add audio mimetypes to connect string

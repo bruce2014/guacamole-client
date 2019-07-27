@@ -166,6 +166,11 @@ public class TunnelRequestService {
         List<String> imageMimetypes = request.getImageMimetypes();
         if (imageMimetypes != null)
             info.getImageMimetypes().addAll(imageMimetypes);
+        
+        // Set timezone if provided
+        String timezone = request.getTimezone();
+        if (timezone != null && !timezone.isEmpty())
+            info.setTimezone(timezone);
 
         return info;
     }

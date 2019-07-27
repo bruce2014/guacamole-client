@@ -131,6 +131,21 @@ angular.module('form').provider('formService', function formServiceProvider() {
         },
 
         /**
+         * Field type which allows selection of languages. The languages
+         * displayed are the set of languages supported by the Guacamole web
+         * application. Legal values are valid language IDs, as dictated by
+         * the filenames of Guacamole's available translations.
+         *
+         * @see {@link Field.Type.LANGUAGE}
+         * @type FieldType
+         */
+        'LANGUAGE' : {
+            module      : 'form',
+            controller  : 'languageFieldController',
+            templateUrl : 'app/form/templates/languageField.html'
+        },
+
+        /**
          * Field type which allows selection of time zones.
          *
          * @see {@link Field.Type.TIMEZONE}
@@ -212,6 +227,10 @@ angular.module('form').provider('formService', function formServiceProvider() {
          *
          * model:
          *     The current String value of the field, if any.
+         *
+         * disabled:
+         *     A boolean value which is true if the field should be disabled.
+         *     If false or undefined, the field should be enabled.
          *
          * @param {Element} fieldContainer
          *     The DOM Element whose contents should be replaced with the
